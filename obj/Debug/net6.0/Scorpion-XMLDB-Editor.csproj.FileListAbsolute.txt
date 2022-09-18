@@ -4,7 +4,6 @@
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/obj/Debug/net6.0/Scorpion-XMLDB-Editor.csproj.CoreCompileInputs.cache
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/Scorpion-XMLDB-Editor.deps.json
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/Scorpion-XMLDB-Editor.dll
-/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/ref/Scorpion-XMLDB-Editor.dll
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/Scorpion-XMLDB-Editor.pdb
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/Scorpion-Default-Paths.dll
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/Squirrel-AES.dll
@@ -21,3 +20,4 @@
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/obj/Debug/net6.0/Scorpion-XMLDB-Editor.csproj.AssemblyReference.cache
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/consolereadwrite.dll
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/consolereadwrite.pdb
+/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/obj/Debug/net6.0/refint/Scorpion-XMLDB-Editor.dll

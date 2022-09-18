@@ -158,7 +158,8 @@ namespace XMLDBEditor
                     content = kvp.Value;
 
                     ConsoleWrite.writeOutput("Checking for changes in file: ", path);
-                    al_get = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
+                    Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
+                    al_get = result.getAllDataAsArray();
 
                     db_content_string = (string)((ArrayList)al_get[0])[0];
 
@@ -225,7 +226,8 @@ namespace XMLDBEditor
                     Directory.CreateDirectory(this.local_tmp_files_path);
 
                 mdb.loadDB(this.database_path, this.database_path, this.password);
-                ArrayList al_get = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
+                Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
+                ArrayList al_get = result.getAllDataAsArray();
 
                 ConsoleWrite.writeSpecial("Got ", al_get.Count.ToString(), " results");
 
