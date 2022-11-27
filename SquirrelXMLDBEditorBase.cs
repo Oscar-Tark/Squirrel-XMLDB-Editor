@@ -1,6 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Scorpion_MDB;
 using SquirrelDefaultPaths;
 using ScorpionConsoleReadWrite;
@@ -108,9 +106,12 @@ namespace XMLDBEditor
                 return;
             }
 
-            private List<string> checkChanges()
+            private Dictionary<string, string> checkChanges()
             {
-                List<string> changed;
+                //Path, Subtag
+                //If a new file. changed[1] will contain a one line parsable manifest on the first line of the file to insert 
+                Dictionary<string, string> changed;
+                Dictionary<string, string> _new;
 
                 //Check if the content has changed from the DB and local version, if not reload the db version, try three times
                 for(int i = 0; i < 3; i++)
@@ -126,18 +127,23 @@ namespace XMLDBEditor
                 
                 //Check if files in /tmp and locally contained files
                 changed = checkChangesFileSystem();
+
+                ConsoleWrite.writeOutput("Found ", Convert.ToString(changed.Count), " files with changes");
+
                 return changed;
             }
 
-            private List<string> checkChangesFileSystem()
+            private Dictionary<string, string> checkChangesFileSystem()
             {
-                List<string> changed = new List<string>();
+                Dictionary<string, string> changed = new Dictionary<string, string>();
                 int ndx = 0;
+
+                ConsoleWrite.writeOutput("Checking local changes..");
 
                 foreach(KeyValuePair<string, ArrayList> xmldb_entries in this.files)
                 {
-                    if(File.ReadAllText(xmldb_entries.Key) != xmldb_entries.Value[0])
-                        changed.Add(xmldb_entries.Key);
+                    if(File.ReadAllText(xmldb_entries.Key) != (string)((ArrayList)(xmldb_entries.Value[0]))[0])
+                        changed.Add(xmldb_entries.Key, (string)((ArrayList)(xmldb_entries.Value[0]))[2]);
                     ndx++;
                 }
 
@@ -146,28 +152,36 @@ namespace XMLDBEditor
 
             private bool checkChangesDB()
             {
-                string path, db_content_string;
+                //Check wether there have been any changes from any other users in the mean time within the database
+
+                string path, db_content_string, subtag;
                 ArrayList content, al_get;
                 List<string> changed = new List<string>();
                 bool fail = false;
                 int ndx = 0;
 
+                ConsoleWrite.writeOutput("Checking remote changes..");
+
                 foreach(KeyValuePair<string, ArrayList> kvp in this.files)
                 {
                     path = kvp.Key;
                     content = kvp.Value;
+                    subtag = (string)kvp.Value[1];
 
                     ConsoleWrite.writeOutput("Checking for changes in file: ", path);
-                    Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
+                    Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, subtag, mdb.OPCODE_GET);
+
+                    //Console.WriteLine("Subtag: {0} --> {1}", kvp.Key, subtag);
+                    
                     al_get = result.getAllDataAsArray();
 
                     db_content_string = (string)((ArrayList)al_get[0])[0];
 
                     //DEBUG
-                    ConsoleWrite.writeDebug(db_content_string, "\n\n\n", (string)content[0]);
+                    //ConsoleWrite.writeDebug("Local: ", db_content_string, "\n\n\nXMLDB: ", (string)((ArrayList)(content[0]))[0]);
 
                     //Fails if the content is not equal to the content in memory
-                    if(db_content_string != content[0])
+                    if(db_content_string != (string)((ArrayList)(content[0]))[0])
                     {
                         fail = true;
                         break;
@@ -180,7 +194,7 @@ namespace XMLDBEditor
             //Save all changes to the database and then cleanUp();
             public void saveChanges()
             {
-                List <string> changed = checkChanges();
+                Dictionary<string, string> changed = checkChanges();
 
                 //If checks failed then return...
                 if(changed == null)
@@ -194,10 +208,18 @@ namespace XMLDBEditor
                 //Save all changes to file only if autosave is on
                 if(this.autosave && changed.Count > 0)
                 {
-                    foreach(string s in changed)
+                    ConsoleWrite.writeOutput("Writing to database..");
+                    foreach(KeyValuePair<string, string> path_and_subtag in changed)
                     {
-                        
+                        ConsoleWrite.writeDebug(path_and_subtag.Value, path_and_subtag.Key);
+                        if(!mdb.updateDB(this.database_path, this.tag, path_and_subtag.Value, File.ReadAllText(path_and_subtag.Key)))
+                            ConsoleWrite.writeError("Unable to save changes for: ", path_and_subtag.Key);
+                        else
+                            ConsoleWrite.writeSuccess("Saved changes from ", path_and_subtag.Key, " to XMLDB");
                     }
+
+                    //Save all changes to disk
+                    mdb.saveDB(this.database_path, this.password);
                 }
                 else
                     ConsoleWrite.writeError("Autosave off, or no changes found");
@@ -209,9 +231,17 @@ namespace XMLDBEditor
             private void exited(object sender, EventArgs e)
             {
                 is_killed = true;
-                ConsoleWrite.writeWarning("Exited the chosen editor, changes will be uploaded to the database (Exiting the application until changes are saved may corrupt the database)");
+                ConsoleWrite.writeWarning("Exited the chosen editor, changes will be checked locally and remotely. These will be uploaded to the database (Exiting the application until changes are saved may corrupt the database)");
                 saveChanges();
                 return;
+            }
+            
+            public bool newFile()
+            {
+                //Adds a new file
+                
+
+                return true;
             }
 
             private List<string> getFromDB()
@@ -249,7 +279,7 @@ namespace XMLDBEditor
                             ConsoleWrite.writeSuccess($"Wrote: {this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
 
                             //Add actual contents and path
-                            this.files.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}", al_response);
+                            this.files.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}", new ArrayList() { al_response, sub_tag } );
 
                             //Add paths
                             files_written.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
@@ -262,19 +292,30 @@ namespace XMLDBEditor
 
             private void startEditor(ref string base_path, List<string> arguments)
             {
-                //Do not use the using() statement, as Exited will not fire due to Process's Idisposable nature
-                this.process = new Process();
-                this.process.StartInfo.FileName = $"{base_path}/{this.editor}";
-                this.process.EnableRaisingEvents = true;
-                this.process.StartInfo.Arguments = string.Join( " ", arguments);
-                process.Exited += new EventHandler(exited);
-                process.Start();
-                this.open_files = arguments;
+                //Check if the process already exists, if it does, we cannot monitor this process and warn user
+                if(Process.GetProcessesByName(this.editor).Length > 0 || Process.GetProcessesByName($"{base_path}/{this.editor}").Length > 0)
+                {
+                    ScorpionConsoleReadWrite.ConsoleWrite.writeError("Editor already running, scoprion needs to be able to monitor your text editor for when it exits In order to save changes. Please close the current instance or use another editor");
+                    return;
+                }
 
-                if(!process.HasExited)
-                    this.is_killed = false;
-                else
-                    cleanUp();
+                //Do not use the using() statement, as Exited will not fire due to Process's Idisposable nature
+                try
+                {
+                    this.process = new Process();
+                    this.process.StartInfo.FileName = $"{base_path}/{this.editor}";
+                    this.process.EnableRaisingEvents = true;
+                    this.process.StartInfo.Arguments = string.Join( " ", arguments);
+                    process.Exited += new EventHandler(exited);
+                    process.Start();
+                    this.open_files = arguments;
+
+                    if(!process.HasExited)
+                        this.is_killed = false;
+                    else
+                        cleanUp();
+                }
+                catch(Exception e){ ConsoleWrite.writeError(e.Message, ": ", e.StackTrace); }
                 return;
             }
         }
