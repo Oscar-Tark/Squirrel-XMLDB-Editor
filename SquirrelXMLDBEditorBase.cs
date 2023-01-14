@@ -10,16 +10,13 @@ namespace XMLDBEditor
     {
             Process process;
             string editor;
-
             ScorpionMicroDB mdb;
             string password;
             string database_path;
             string database_path_neutral;
             string tag;
             string subtag;
-
             string local_tmp_files_path;
-
             bool autosave;
             bool is_same;
             bool is_killed;
@@ -163,14 +160,11 @@ namespace XMLDBEditor
                     ConsoleWrite.writeOutput("Checking for changes in file: ", path);
                     Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, subtag, mdb.OPCODE_GET);
 
-                    //Console.WriteLine("Subtag: {0} --> {1}", kvp.Key, subtag);
-                    
                     al_get = result.getAllDataAsArray();
 
                     db_content_string = (string)((ArrayList)al_get[0])[0];
 
                     //DEBUG
-                    //ConsoleWrite.writeDebug("Local: ", db_content_string, "\n\n\nXMLDB: ", (string)((ArrayList)(content[0]))[0]);
                     //Fails if the content is not equal to the content in memory
                     if(db_content_string != (string)((ArrayList)(content[0]))[0])
                     {
@@ -256,6 +250,7 @@ namespace XMLDBEditor
                     ConsoleWrite.writeError("Autosave off. Changes and/or new files not saved");
 
                 cleanUp();
+                this.Dispose();
                 return;
             }
 
