@@ -86,6 +86,16 @@
           "bin/placeholder/Squirrel-Cryptography.dll": {}
         }
       },
+      "squirrel-inheritable/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "compile": {
+          "bin/placeholder/squirrel-inheritable.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/squirrel-inheritable.dll": {}
+        }
+      },
       "Squirrel-XMLDB/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v6.0",
@@ -191,6 +201,11 @@
       "path": "../Squirrel-Cryptography/Squirrel-Cryptography.csproj",
       "msbuildProject": "../Squirrel-Cryptography/Squirrel-Cryptography.csproj"
     },
+    "squirrel-inheritable/1.0.0": {
+      "type": "project",
+      "path": "../Squirrel-Inheritable/squirrel-inheritable.csproj",
+      "msbuildProject": "../Squirrel-Inheritable/squirrel-inheritable.csproj"
+    },
     "Squirrel-XMLDB/1.0.0": {
       "type": "project",
       "path": "../Squirrel-XMLDB/Squirrel-XMLDB.csproj",
@@ -201,7 +216,8 @@
     "net6.0": [
       "Scorpion-Default-Paths >= 1.0.0",
       "Squirrel-XMLDB >= 1.0.0",
-      "consolereadwrite >= 1.0.0"
+      "consolereadwrite >= 1.0.0",
+      "squirrel-inheritable >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -234,6 +250,9 @@
             },
             "/home/ferret/GIT/Squirrel_Project/Squirrel-Default-Paths/Scorpion-Default-Paths.csproj": {
               "projectPath": "/home/ferret/GIT/Squirrel_Project/Squirrel-Default-Paths/Scorpion-Default-Paths.csproj"
+            },
+            "/home/ferret/GIT/Squirrel_Project/Squirrel-Inheritable/squirrel-inheritable.csproj": {
+              "projectPath": "/home/ferret/GIT/Squirrel_Project/Squirrel-Inheritable/squirrel-inheritable.csproj"
             },
             "/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB/Squirrel-XMLDB.csproj": {
               "projectPath": "/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB/Squirrel-XMLDB.csproj"

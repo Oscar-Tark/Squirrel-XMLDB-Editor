@@ -21,3 +21,5 @@
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/consolereadwrite.dll
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/consolereadwrite.pdb
 /home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/obj/Debug/net6.0/refint/Scorpion-XMLDB-Editor.dll
+/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/squirrel-inheritable.dll
+/home/ferret/GIT/Squirrel_Project/Squirrel-XMLDB-Editor/bin/Debug/net6.0/squirrel-inheritable.pdb

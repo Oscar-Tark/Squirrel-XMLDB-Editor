@@ -6,21 +6,8 @@ using System.Collections;
 
 namespace XMLDBEditor
 {
-    public class XMLDBEditorBase : IDisposable
+    public class XMLDBEditorBase : SquirrelInheritable.SquirrelDisposable
     {
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-    
-        internal bool Disposed { get; private set; }
-    
-        protected virtual void Dispose(bool disposing)
-        {
-            Disposed = true;
-        }
-
             Process process;
             string editor;
 

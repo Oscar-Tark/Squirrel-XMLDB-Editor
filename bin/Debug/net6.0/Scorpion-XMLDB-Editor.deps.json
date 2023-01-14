@@ -10,7 +10,8 @@
         "dependencies": {
           "Scorpion-Default-Paths": "1.0.0",
           "Squirrel-XMLDB": "1.0.0",
-          "consolereadwrite": "1.0.0"
+          "consolereadwrite": "1.0.0",
+          "squirrel-inheritable": "1.0.0"
         },
         "runtime": {
           "Scorpion-XMLDB-Editor.dll": {}
@@ -69,6 +70,11 @@
           "Squirrel-Cryptography.dll": {}
         }
       },
+      "squirrel-inheritable/1.0.0": {
+        "runtime": {
+          "squirrel-inheritable.dll": {}
+        }
+      },
       "Squirrel-XMLDB/1.0.0": {
         "dependencies": {
           "Squirrel-AES": "1.0.0",
@@ -123,6 +129,11 @@
       "sha512": ""
     },
     "Squirrel-Cryptography/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "squirrel-inheritable/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
