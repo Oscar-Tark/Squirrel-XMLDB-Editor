@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Squirrel-Default-Paths\Scorpion-Default-Paths.csproj" />
     <ProjectReference Include="..\Squirrel-XMLDB\Squirrel-XMLDB.csproj" />
     <ProjectReference Include="..\Squirrel-Console-Read-Write\consolereadwrite.csproj" />
+    <ProjectReference Include="..\Squirrel-Inheritable\squirrel-inheritable.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

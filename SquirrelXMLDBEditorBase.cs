@@ -6,18 +6,21 @@ using System.Collections;
 
 namespace XMLDBEditor
 {
-    public class XMLDBEditorBase
+    public class XMLDBEditorBase : IDisposable
     {
-        public XMLDBEditorBase()
+        public void Dispose()
         {
-            editing_elements = new Dictionary<string, EditingElement>();
-            return;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+    
+        internal bool Disposed { get; private set; }
+    
+        protected virtual void Dispose(bool disposing)
+        {
+            Disposed = true;
         }
 
-        protected Dictionary<string, EditingElement> editing_elements; 
-
-        protected struct EditingElement
-        {
             Process process;
             string editor;
 
@@ -37,9 +40,8 @@ namespace XMLDBEditor
             List<string> open_files;
             Dictionary<string, ArrayList> files;
 
-            public EditingElement(string database_path, string tag, string password, string editor = null, string subtag = null, bool autosave = true)
+            public XMLDBEditorBase(string database_path, string tag, string password, string editor = null, string subtag = null, bool autosave = true)
             {
-
                 //Set elements by default
                 this.process = null;
                 this.editor = editor;
@@ -100,8 +102,12 @@ namespace XMLDBEditor
                     if(File.Exists(file))
                         File.Delete(file);
                 }
-                Directory.Delete(this.local_tmp_files_path);
 
+                try
+                {
+                    Directory.Delete(this.local_tmp_files_path, false);
+                }
+                catch(Exception e){ ScorpionConsoleReadWrite.ConsoleWrite.writeWarning("Edit directory not empty. Please delete manually '", this.local_tmp_files_path, "'"); }
                 mdb.closeDB(this.database_path);
                 return;
             }
@@ -127,7 +133,6 @@ namespace XMLDBEditor
                 
                 //Check if files in /tmp and locally contained files
                 changed = checkChangesFileSystem();
-
                 ConsoleWrite.writeOutput("Found ", Convert.ToString(changed.Count), " files with changes");
 
                 return changed;
@@ -179,7 +184,6 @@ namespace XMLDBEditor
 
                     //DEBUG
                     //ConsoleWrite.writeDebug("Local: ", db_content_string, "\n\n\nXMLDB: ", (string)((ArrayList)(content[0]))[0]);
-
                     //Fails if the content is not equal to the content in memory
                     if(db_content_string != (string)((ArrayList)(content[0]))[0])
                     {
@@ -191,10 +195,32 @@ namespace XMLDBEditor
                 return fail;
             }
 
+            public Dictionary<string, string> checkNew()
+            {
+                Dictionary<string, string> new_files = new Dictionary<string, string>();
+                FileInfo fnf_temp; string temp_content = string.Empty;
+
+                foreach(string path in Directory.GetFiles(this.local_tmp_files_path))
+                {
+                    temp_content = string.Empty;
+                    fnf_temp = new FileInfo(path);
+
+                    //If file does not already exist within the DB
+                    if(!files.ContainsKey(fnf_temp.FullName))
+                    {
+                        temp_content = File.ReadAllText(path);
+                        new_files.Add(fnf_temp.Name, temp_content);
+                    }
+                }
+
+                return new_files;
+            }
+
             //Save all changes to the database and then cleanUp();
             public void saveChanges()
             {
                 Dictionary<string, string> changed = checkChanges();
+                Dictionary<string, string> new_files = checkNew();
 
                 //If checks failed then return...
                 if(changed == null)
@@ -206,23 +232,41 @@ namespace XMLDBEditor
                 }
 
                 //Save all changes to file only if autosave is on
-                if(this.autosave && changed.Count > 0)
+                if(this.autosave)
                 {
-                    ConsoleWrite.writeOutput("Writing to database..");
-                    foreach(KeyValuePair<string, string> path_and_subtag in changed)
+                    if(changed.Count > 0)
                     {
-                        ConsoleWrite.writeDebug(path_and_subtag.Value, path_and_subtag.Key);
-                        if(!mdb.updateDB(this.database_path, this.tag, path_and_subtag.Value, File.ReadAllText(path_and_subtag.Key)))
-                            ConsoleWrite.writeError("Unable to save changes for: ", path_and_subtag.Key);
-                        else
-                            ConsoleWrite.writeSuccess("Saved changes from ", path_and_subtag.Key, " to XMLDB");
+                        ConsoleWrite.writeOutput("Writing changes to database..");
+                        foreach(KeyValuePair<string, string> path_and_subtag in changed)
+                        {
+                            ConsoleWrite.writeDebug(path_and_subtag.Value, path_and_subtag.Key);
+                            if(!mdb.updateDB(this.database_path, this.tag, path_and_subtag.Value, File.ReadAllText(path_and_subtag.Key)))
+                                ConsoleWrite.writeError("Unable to save changes for: ", path_and_subtag.Key);
+                            else
+                                ConsoleWrite.writeSuccess("Saved changes from ", path_and_subtag.Key, " to XMLDB");
+                        }
+                    }
+
+                    //Add new files
+                    if(new_files.Count > 0)
+                    {
+                        ConsoleWrite.writeOutput("Writing new files to database. Names of files will be used as the tag");
+                        foreach(KeyValuePair<string, string> subtag_and_content in new_files)
+                        {
+                            ConsoleWrite.writeDebug("Insert new file: ", subtag_and_content.Key);
+                            if(!mdb.setDB(this.database_path, subtag_and_content.Value, this.tag, subtag_and_content.Key))
+                                ConsoleWrite.writeError("Unable to insert new file: ", subtag_and_content.Key);
+                            else
+                                ConsoleWrite.writeSuccess("Inserted new file: ", subtag_and_content.Key, " to XMLDB");
+                        }
                     }
 
                     //Save all changes to disk
                     mdb.saveDB(this.database_path, this.password);
+                    
                 }
                 else
-                    ConsoleWrite.writeError("Autosave off, or no changes found");
+                    ConsoleWrite.writeError("Autosave off. Changes and/or new files not saved");
 
                 cleanUp();
                 return;
@@ -234,14 +278,6 @@ namespace XMLDBEditor
                 ConsoleWrite.writeWarning("Exited the chosen editor, changes will be checked locally and remotely. These will be uploaded to the database (Exiting the application until changes are saved may corrupt the database)");
                 saveChanges();
                 return;
-            }
-            
-            public bool newFile()
-            {
-                //Adds a new file
-                
-
-                return true;
             }
 
             private List<string> getFromDB()
@@ -255,10 +291,17 @@ namespace XMLDBEditor
                 if(!Directory.Exists(this.local_tmp_files_path))
                     Directory.CreateDirectory(this.local_tmp_files_path);
 
-                mdb.loadDB(this.database_path, this.database_path, this.password);
+                try
+                {
+                    mdb.loadDB(this.database_path, this.database_path, this.password);
+                }
+                catch(Exception e)
+                {
+                    ConsoleWrite.writeError("Database '", this.database_path,"' in use");
+                }
+
                 Scorpion_MDB.ScorpionMicroDB.XMLDBResult result = mdb.doDBSelectiveNoThread(this.database_path, null, this.tag, this.subtag, mdb.OPCODE_GET);
                 ArrayList al_get = result.getAllDataAsArray();
-
                 ConsoleWrite.writeSpecial("Got ", al_get.Count.ToString(), " results");
 
                 string sub_tag;
@@ -267,7 +310,7 @@ namespace XMLDBEditor
                     foreach(ArrayList al_response in al_get)
                     {
                         sub_tag = (string)(al_response[2] == null ? "" : al_response[2]);
-                        using(FileStream fs = File.Create($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}"))
+                        using(FileStream fs = File.Create($"{this.local_tmp_files_path}/{sub_tag}"))//File.Create($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}"))
                         {
                             ConsoleWrite.writeOutput($"Writing: {this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
                             StreamWriter sw = new StreamWriter(fs);
@@ -279,10 +322,12 @@ namespace XMLDBEditor
                             ConsoleWrite.writeSuccess($"Wrote: {this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
 
                             //Add actual contents and path
-                            this.files.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}", new ArrayList() { al_response, sub_tag } );
+                            //this.files.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}", new ArrayList() { al_response, sub_tag } );
+                            this.files.Add($"{this.local_tmp_files_path}/{sub_tag}", new ArrayList() { al_response, sub_tag } );
 
                             //Add paths
-                            files_written.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
+                            //files_written.Add($"{this.local_tmp_files_path}/{al_response[1]}.{sub_tag}");
+                            files_written.Add($"{this.local_tmp_files_path}/{sub_tag}");
                         }
                     }
                 }
@@ -295,7 +340,7 @@ namespace XMLDBEditor
                 //Check if the process already exists, if it does, we cannot monitor this process and warn user
                 if(Process.GetProcessesByName(this.editor).Length > 0 || Process.GetProcessesByName($"{base_path}/{this.editor}").Length > 0)
                 {
-                    ScorpionConsoleReadWrite.ConsoleWrite.writeError("Editor already running, scoprion needs to be able to monitor your text editor for when it exits In order to save changes. Please close the current instance or use another editor");
+                    ScorpionConsoleReadWrite.ConsoleWrite.writeError("Editor already running. Scorpion needs to be able to monitor your text editor for when it exits In order to save changes. Please close the current instance or use another editor");
                     return;
                 }
 
@@ -305,7 +350,7 @@ namespace XMLDBEditor
                     this.process = new Process();
                     this.process.StartInfo.FileName = $"{base_path}/{this.editor}";
                     this.process.EnableRaisingEvents = true;
-                    this.process.StartInfo.Arguments = string.Join( " ", arguments);
+                    this.process.StartInfo.Arguments = string.Join(" ", arguments);
                     process.Exited += new EventHandler(exited);
                     process.Start();
                     this.open_files = arguments;
@@ -318,6 +363,5 @@ namespace XMLDBEditor
                 catch(Exception e){ ConsoleWrite.writeError(e.Message, ": ", e.StackTrace); }
                 return;
             }
-        }
     }
 }
